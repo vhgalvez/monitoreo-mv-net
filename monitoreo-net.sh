@@ -15,27 +15,16 @@ verificar_ip() {
     ping_status="✅"
   fi
 
-  # Escanear puertos SSH y Kubernetes API con nmap
-  local nmap_output=$(nmap -p 22,6443 --open "$ip")
-
-  # Procesar salida de nmap
-  if echo "$nmap_output" | grep -q "22/tcp"; then
+  # Verificar puertos con socat
+  if socat -T 0.1 -u TCP4:"$ip":22 /dev/null &> /dev/null; then
     ssh_status="✅"
   fi
-  if echo "$nmap_output" | grep -q "6443/tcp"; then
+  if socat -T 0.1 -u TCP4:"$ip":6443 /dev/null &> /dev/null; then
     api_status="✅"
   fi
 
   echo "$ip - Ping: $ping_status | SSH: $ssh_status | API: $api_status"
 }
 
-# Loop infinito para monitorear
-while true; do
-  clear
-  echo "⏱️ Monitoreando las VMs - $(date)"
-
-  # Ejecutar verificaciones en paralelo con xargs, definiendo la función dentro de bash -c
-  printf "%s\n" "${IPs[@]}" | xargs -I {} -P $(nproc) bash -c 'verificar_ip() { local ip="$1"; local ping_status="❌"; local ssh_status="❌"; local api_status="❌"; if ping -c 1 -W 1 "$ip" &> /dev/null; then ping_status="✅"; fi; local nmap_output=$(nmap -p 22,6443 --open "$ip"); if echo "$nmap_output" | grep -q "22/tcp"; then ssh_status="✅"; fi; if echo "$nmap_output" | grep -q "6443/tcp"; then api_status="✅"; fi; echo "$ip - Ping: $ping_status | SSH: $ssh_status | API: $api_status"; }; verificar_ip {}'
-
-  sleep 5
-done
+# Monitoreo continuo con watch
+watch -n 1 -t bash -c 'clear; echo "⏱️ Monitoreo en Tiempo Real - $(date)"; for ip in "${IPs[@]}"; do verificar_ip "$ip"; done'
