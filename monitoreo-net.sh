@@ -30,7 +30,7 @@ verificar_ip() {
 ejecutar_monitoreo() {
   clear
   echo "⏱️ Monitoreo en Tiempo Real - $(date)"
-  echo "Depuración: Función ejecutar_monitoreo ejecutada" # Agregar esta línea
+  echo "Ejecutando monitoreo de VMs..." # Agregar esta línea
   for ip in "${IPs[@]}"; do
     verificar_ip "$ip"
   done
