@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/bash
 # Listado de direcciones IP de las VMs
 IPs=("10.17.4.21" "10.17.4.22" "10.17.4.23" "10.17.4.24" "10.17.4.25" "10.17.4.26" "10.17.4.27")
 
