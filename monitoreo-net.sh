@@ -26,5 +26,14 @@ verificar_ip() {
   echo "$ip - Ping: $ping_status | SSH: $ssh_status | API: $api_status"
 }
 
+# Función para ejecutar el monitoreo
+ejecutar_monitoreo() {
+  clear
+  echo "⏱️ Monitoreo en Tiempo Real - $(date)"
+  for ip in "${IPs[@]}"; do
+    verificar_ip "$ip"
+  done
+}
+
 # Monitoreo continuo con watch
-watch -n 1 -t bash -c 'clear; echo "⏱️ Monitoreo en Tiempo Real - $(date)"; for ip in "${IPs[@]}"; do verificar_ip "$ip"; done'
+watch -n 1 -t ejecutar_monitoreo
