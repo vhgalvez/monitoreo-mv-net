@@ -9,11 +9,14 @@ while true; do
     echo "⏱️ Monitoreando las VMs - $(date)"
     for ip in "${IPs[@]}"; do
         # Verificar si la VM está activa con ping
-        ping_status=$(ping -c 1 $ip &> /dev/null && echo "✅" || echo "❌")
-        
-        # Escanear los puertos SSH y Kubernetes API con nmap
-        ssh_status=$(nmap -p 22 --open $ip | grep "22/tcp" | awk '{print $2}' || echo "❌")
-        api_status=$(nmap -p 6443 --open $ip | grep "6443/tcp" | awk '{print $2}' || echo "❌")
+        ping_status=$(ping -c 1 -W 1 $ip &> /dev/null && echo "✅" || echo "❌")
+
+        # Escanear los puertos SSH y Kubernetes API con nmap de manera concurrente
+        nmap_output=$(echo $ip | xargs -I {} -P 2 nmap -p 22,6443 --open {})
+
+        # Procesar la salida de nmap
+        ssh_status=$(echo "$nmap_output" | grep "22/tcp" | awk '{print $2}' || echo "❌")
+        api_status=$(echo "$nmap_output" | grep "6443/tcp" | awk '{print $2}' || echo "❌")
         
         echo "$ip - Ping: $ping_status | SSH: $ssh_status | API: $api_status"
     done
