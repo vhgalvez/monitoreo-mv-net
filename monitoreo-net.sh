@@ -3,22 +3,39 @@
 # Listado de direcciones IP de las VMs
 IPs=("10.17.4.21" "10.17.4.22" "10.17.4.23" "10.17.4.24" "10.17.4.25" "10.17.4.26" "10.17.4.27")
 
+# Función para verificar una IP
+verificar_ip() {
+  local ip="$1"
+  local ping_status="❌"
+  local ssh_status="❌"
+  local api_status="❌"
+
+  # Verificar ping
+  if ping -c 1 -W 1 "$ip" &> /dev/null; then
+    ping_status="✅"
+  fi
+
+  # Escanear puertos SSH y Kubernetes API con nmap
+  local nmap_output=$(nmap -p 22,6443 --open "$ip")
+
+  # Procesar salida de nmap
+  if echo "$nmap_output" | grep -q "22/tcp"; then
+    ssh_status="✅"
+  fi
+  if echo "$nmap_output" | grep -q "6443/tcp"; then
+    api_status="✅"
+  fi
+
+  echo "$ip - Ping: $ping_status | SSH: $ssh_status | API: $api_status"
+}
+
 # Loop infinito para monitorear
 while true; do
-    clear
-    echo "⏱️ Monitoreando las VMs - $(date)"
-    for ip in "${IPs[@]}"; do
-        # Verificar si la VM está activa con ping
-        ping_status=$(ping -c 1 -W 1 $ip &> /dev/null && echo "✅" || echo "❌")
+  clear
+  echo "⏱️ Monitoreando las VMs - $(date)"
 
-        # Escanear los puertos SSH y Kubernetes API con nmap de manera concurrente
-        nmap_output=$(echo $ip | xargs -I {} -P 2 nmap -p 22,6443 --open {})
+  # Ejecutar verificaciones en paralelo con xargs
+  printf "%s\n" "${IPs[@]}" | xargs -I {} -P $(nproc) bash -c "verificar_ip {}"
 
-        # Procesar la salida de nmap
-        ssh_status=$(echo "$nmap_output" | grep "22/tcp" | awk '{print $2}' || echo "❌")
-        api_status=$(echo "$nmap_output" | grep "6443/tcp" | awk '{print $2}' || echo "❌")
-        
-        echo "$ip - Ping: $ping_status | SSH: $ssh_status | API: $api_status"
-    done
-    sleep 5
+  sleep 5
 done
